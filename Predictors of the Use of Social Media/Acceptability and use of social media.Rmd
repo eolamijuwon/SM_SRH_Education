@@ -1,0 +1,239 @@
+---
+title: "Acceptability and use of social media for accessing SRH Information"
+author: "eOlamijuwon"
+date: "9/21/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r Instal Important Libraries, cache=TRUE, include=FALSE}
+chooseCRANmirror(graphics=FALSE, ind=1)
+knitr::opts_chunk$set(echo = TRUE)
+
+
+pkgs <- c("broom", "compareGroups", "gmodels", "haven", "kableExtra",
+          "latexpdf", "lubridate", 'mosaic', "oddsratio", "readstata13",
+          "stargazer", 'summarytools', 'survey', "stargazer", "tables",
+          "tidyverse", "xtable", "epiDisplay", "gdata")
+
+
+miss_pkgs <- pkgs[!pkgs %in% installed.packages()[,1]] # vector of missing packages
+
+# Installing the missing packages
+if(length(miss_pkgs)>0){
+  install.packages(miss_pkgs)
+}
+
+# Loading all the packages
+invisible(lapply(pkgs,library,character.only=TRUE))
+rm(miss_pkgs)
+rm(pkgs)
+
+
+``` 
+
+## Including Plots
+
+```{r pressure, echo=FALSE}
+
+# setwd("C:/Users/eOlamijuwon/OneDrive/Research/Social Media/Research/Predictors of the Use of Social Media/")
+response_level <- factor(c("Strongly agree", 
+                           "Agree", "Neutral",
+                           "Disagree", "Strongly disagree"))
+
+response_lev_rev <- factor(c("Strongly disagree", "Disagree",
+                           "Neutral", "Agree", "Strongly agree"))
+
+
+survey_SRH <- read.csv("Quiz-Result.csv",
+                       sep = ",",
+                       quote =  "\"",
+                       header = TRUE,
+                       fill = TRUE,
+                       na.strings = TRUE,
+                       strip.white = T) %>% 
+
+                       
+  dplyr::select("Username", "Start.Time", "End.Time",
+                "Spend.Time", "Date", "Total.Given.Answers",
+                starts_with("Your.Answer")) %>% 
+  ## Demographics
+  rename(consent = Your.Answer,
+         MoB = Your.Answer.1,
+         YoB = Your.Answer.2,
+         Age = Your.Answer.3,
+         Sex = Your.Answer.4,
+         CoB = Your.Answer.5,
+         CoResidence = Your.Answer.6,
+         Education = Your.Answer.7,
+         Relationship = Your.Answer.8,
+         Religion = Your.Answer.9) %>% 
+  
+  ## Performance Expectancy
+  rename(PE01 = Your.Answer.10,
+         PE02 = Your.Answer.11,
+         PE03 = Your.Answer.12,
+         PE04 = Your.Answer.13,
+         PE05 = Your.Answer.14) %>% 
+  
+  mutate(PE01 = factor(PE01, levels = response_level),
+         PE02 = factor(PE02, levels = response_level),
+         PE03 = factor(PE03, levels = response_level),
+         PE04 = factor(PE04, levels = response_level),
+         PE05 = factor(PE05, levels = response_level)) %>% 
+           
+  ## Effort Expectancy
+  rename(EE01 = Your.Answer.15,
+         EE02 = Your.Answer.16,
+         EE03 = Your.Answer.17) %>%
+    
+  mutate(EE01 = factor(EE01, levels = response_level),
+         EE02 = factor(EE02, levels = response_level),
+         EE03 = factor(EE03, levels = response_level)) %>% 
+  
+  ## Social Influence
+  rename(SE01 = Your.Answer.18,
+         SE02 = Your.Answer.19,
+         SE03 = Your.Answer.20,
+         SE04 = Your.Answer.21,
+         SE05 = Your.Answer.22,
+         SE06 = Your.Answer.23) %>% 
+
+  mutate(SE01 = factor(SE01, levels = response_lev_rev),
+         SE02 = factor(SE02, levels = response_level),
+         SE03 = factor(SE03, levels = response_level),
+         SE04 = factor(SE04, levels = response_level),
+         SE05 = factor(SE05, levels = response_lev_rev),
+         SE06 = factor(SE06, levels = response_lev_rev)) %>% 
+    
+  ## Voluntariness of use
+  rename(VU01 = Your.Answer.24) %>%
+    
+  mutate(VU01 = factor(VU01, levels = response_level)) %>% 
+           
+  ## Barriers to use
+  rename(BE01 = Your.Answer.25,
+         BE02 = Your.Answer.26,
+         BE03 = Your.Answer.27,
+         BE04 = Your.Answer.28,
+         BE05 = Your.Answer.29,
+         BE06 = Your.Answer.30) %>% 
+    
+  mutate(BE01 = factor(BE01, levels = response_level),
+         BE02 = factor(BE02, levels = response_lev_rev),
+         BE03 = factor(BE03, levels = response_level),
+         BE04 = factor(BE04, levels = response_level),
+         BE05 = factor(BE05, levels = response_level),
+         BE06 = factor(BE06, levels = response_level)) %>% 
+
+  
+  ## Behavioural Intention to Use
+  rename(BiU01 = Your.Answer.31,
+         BiU02 = Your.Answer.32,
+         BiU03 = Your.Answer.33) %>% 
+ 
+  mutate(BiU01 = factor(BiU01, levels = response_level),
+         BiU02 = factor(BiU02, levels = response_level),
+         BiU03 = factor(BiU03, levels = response_level)) %>% 
+           
+  ## Other Measures
+  rename(SRH.Member = Your.Answer.34,
+         Fan.SHYadNET = Your.Answer.35,
+         Platform = Your.Answer.36,
+         Contact = Your.Answer.37) %>% 
+  
+  filter(PE01 != "" | BE01 != "") %>% 
+  filter(is.na(BE03) == FALSE)
+  
+
+
+
+  survey_SRH <- drop.levels(survey_SRH)
+
+###
+```
+
+
+
+```{r}
+
+
+
+#         v = factor(v, levels = c("Strongly agree", 
+#                                   "Agree", "Neutral",
+#                                   "Disagree", "Strongly disagree")) 
+#   }
+#     
+#     regressionresult <- lm(glue::glue('y ~ {v}'), data = mydata)
+#        
+#     
+# survey_SRH_clean$PE01 <- factor_order(survey_SRH_clean, PE01)
+
+
+survey_SRH_clean <- survey_SRH %>% 
+  filter(consent == "I agree, proceed") %>% 
+  filter(is.na(YoB) == FALSE) %>% 
+  separate(col = Spend.Time, into = c("Spend.Sec", "unit"), sep = "\\ ") %>% 
+  mutate(Spend.Sec = as.integer(Spend.Sec),
+         Date = as.Date(Date)) %>% 
+  filter(Spend.Sec >= 240) %>% 
+  filter(CoB != "Not in Africa" |
+           CoResidence != "Not in Africa") %>% 
+  filter(Age >= 18) %>% 
+  dplyr::select(-c("unit", "consent", "Username",
+                   "Start.Time", "End.Time", 
+                   "Total.Given.Answers"))
+  survey_SRH_clean <- 
+    drop.levels(survey_SRH_clean)
+
+  
+  
+
+
+  
+
+# survey_SRH_clean$number <- Numextract(survey_SRH_clean$Contact)
+
+survey_SRH_clean$number <- str_extract(survey_SRH_clean$Contact, "\\+*\\d+\\.*\\d*")
+survey_SRH_clean$email <- str_extract(survey_SRH_clean$Contact, "[a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\\.[a-zA-Z0-9_-]+")
+
+
+# 
+# Numextract <- function(string){
+#   unlist(regmatches(string,gregexpr("[[:digit:]]+\\.*[[:digit:]]*",string)))
+# }
+  
+
+# Numextract("0704845576-bwayofranckustz@gmail.com")  
+# 
+# survey_SRH_clean <- survey_SRH_clean %>% 
+#   mutate(email = grep(survey_SRH_clean$Contact, pattern = "[0-9]{17}", value = TRUE))
+# 
+# 
+#       !str_detect(Contact, pattern = "[[:digit:]]") # removes any words with numeric digits
+# 
+
+```
+
+
+```{r}
+
+print(dfSummary(survey_SRH_clean, style = 'grid', plain.ascii = FALSE, graph.magnif = 0.85), 
+  method = 'render', omit.headings = TRUE)
+
+
+```
+
+
+
+```{r}
+
+readstata13::save.dta13(survey_SRH_clean, "surveyDta.dta")
+
+```
+
