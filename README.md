@@ -1,9 +1,9 @@
-# Advancing Sexual Health Education for Young African Adults in the Digital Age
+# **“Can someone be deflowered without having sex?”** A content analysis of sexual and reproductive health information for and by young African adults on Facebook.
 
-A critical 2030 Agenda for Sustainable Development adopted by all United Nations Member States including those on the African continent is
+Purpose: We examine the use of Facebook group for peer communication of sexual and reproductive health messages as well as intimate relations among young African adults. 
 
-- ensuring universal access to sexual and reproductive health (SRH) and reproductive rights  (SDG 5.6). 
+Study Design: We analysed a corpus of 3533 sexual and reproductive health messages shared on a closed Facebook group by and for young African adults between June 1, 2018, and May 31, 2019. Facebook posts were independently classified into thematic categories such as topic, style and tone of communication. Negative binomial models were fitted to assess statistically significant difference in message interaction and propagation by topic, style and tone of communication.
 
-- To achieve this, the government of the various African countries need to ensure that by 2030, there is a universal access to sexual and reproductive health-care services, including for family planning, information and education, and the integration of reproductive health into national strategies and programmes (SDG 3.7).
+Results: Majority of the messages were on intimate relationship and close to 25% of the messages enact fear/stigma/guilt. Majority of family planning messages enact fear/stigma/guilt while about one-third of sexual purity and abstinence messages enact fear/stigma/guilt. Messages with fear [IRR:0.75, 95%CI: 0.66-0.86] or guilt [IRR:0.82, 95%CI: 0.72-0.92] appeals received a significantly lower number of reactions compared to neutral messages. Messages telling a story or sharing an experience were more likely to be interacted with or shared compared to plain messages (p < 0.05). Messages requesting for an opinion [IRR:4.25, 95%CI: 3.57-5.10] had a significantly higher number of comments compared to plain messages.
 
-- The use of enabling technology such as social media could contribute to the empowerment of young African adults to advance their sexual and reproductive health and rights (SDG 5.B).
+Conclusions: These findings suggest that there is already a window of opportunity to reach young African adults with sexual and reproductive health messages on social media. Our work paves the way for the design of effective and engaging sexual and reproductive health information for young African adults on social media. 
