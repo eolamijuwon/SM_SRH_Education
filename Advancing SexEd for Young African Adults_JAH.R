@@ -51,8 +51,8 @@ miss_pkgs <- pkgs[!pkgs %in%
               
               
 ## Read Datasets from GitHub              
-FB_SRH <- read.csv(text=getURL("https://raw.githubusercontent.com/eolamijuwon/advancing-SexEd/master/FB-Advancing%20SRH.csv"), header=T)
-codebook <- read.csv(text=getURL("https://raw.githubusercontent.com/eolamijuwon/advancing-SexEd/master/SRH%20-%20codebook.csv"), header=T)
+FB_SRH <- read.csv(text=getURL("https://raw.githubusercontent.com/eolamijuwon/SM_SRH_Education/master/FB-Advancing%20SRH.csv"), header=T)
+codebook <- read.csv(text=getURL("https://raw.githubusercontent.com/eolamijuwon/SM_SRH_Education/master/SRH%20-%20codebook.csv"), header=T)
 
 
 
