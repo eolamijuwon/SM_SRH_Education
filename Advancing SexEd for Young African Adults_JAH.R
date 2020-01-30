@@ -26,7 +26,8 @@ pkgs <- c("tidyverse",
           "tweenr",
           "webshot",
           "readxl",
-          "MASS"
+          "MASS",
+          "RCurl"
           )
 
 miss_pkgs <- pkgs[!pkgs %in% 
