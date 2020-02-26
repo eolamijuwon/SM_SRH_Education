@@ -1,4 +1,4 @@
-## *“Can someone be deflowered without having sex?”* A content analysis of sexuality education for and by young African adults on Facebook.
+## *“Condoms don't prevent sexually transmitted demons:”* A content analysis of sexuality education for and by young African adults on Facebook.
 
 **Purpose:** We examine the use of Facebook group for peer communication of sexual and reproductive health messages as well as intimate relations among young African adults. 
 
