@@ -1,0 +1,825 @@
+---
+title: "Data Viz Practice"
+author: "eOlamijuwon"
+date: "7/5/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r}
+
+library(here)
+library(tidyverse)
+library(waffle)
+library(readxl)
+library(tweenr)
+library(summarytools)
+library(mosaic)
+library(ggridges)
+library(scales)
+library(lubridate)
+
+library(ggpol)
+library(ggpubr)
+library(magrittr)
+library(tidytext)
+library(janeaustenr)
+
+library(extrafont)
+library(showtext)
+library(kableExtra)
+
+
+#devtools::install_github("lchiffon/wordcloud2")
+
+library(tidytext)
+library(stringr)
+library(htmlwidgets)
+library(webshot)
+# webshot::install_phantomjs()
+library(wordcloud2)
+
+setwd("C:\\Users\\eOlamijuwon\\OneDrive\\Research\\Social Media\\Research\\Content Analysis\\What are they posting")
+
+```
+
+```{r}
+
+advancingSexEd <- read.csv("../../Data in Brief/data/advancing SexEd in Africa.csv") %>% 
+                  select(-c("X")) %>% 
+                  mutate(postid = as.character(postid),
+                         post_date = as.character(post_date))
+
+
+multidate <- function(data, formats){
+    a<-list()
+    for(i in 1:length(formats)){
+        a[[i]]<- as.Date(data,format=formats[i])
+        a[[1]][!is.na(a[[i]])]<-a[[i]][!is.na(a[[i]])]
+        }
+    a[[1]]
+    }
+
+  advancingSexEd$post_date <- multidate(advancingSexEd$post_date, 
+                                 c("%Y-%m-%d", "%D-%m-%y",
+                                   "%d-%m-%y", "%m/%d/%Y"))
+
+
+
+candidate_a <- read_xlsx("./data/Buhle.xlsx") %>% 
+    select(c("postid", "topic", "purpose", "tone", "status")) %>% 
+    rename(topic_a = topic,
+           purpose_a = purpose,
+           tone_a = tone,
+           status_a = status) %>% 
+    subset(postid %in% 
+             as.character(advancingSexEd$postid))
+
+
+candidate_b <- read_xlsx("./data/Phinda.xlsx") %>% 
+    select(c("postid", "topic", "purpose", "tone", "status")) %>% 
+    rename(topic_b = topic,
+       purpose_b = purpose,
+       tone_b = tone,
+       status_b = status) %>% 
+    subset(postid %in% 
+             as.character(advancingSexEd$postid))
+
+
+merged_data <- advancingSexEd %>% 
+    inner_join(candidate_a,
+               by = "postid") %>% 
+    inner_join(candidate_b,
+               by = "postid") %>% 
+    mutate(status = ifelse((status_b == status_a), status_b, 
+                           ifelse((status_a == "Keep" & 
+                                     status_b == "Delete"), status_a,
+                                  ifelse((status_b == "Keep" & 
+                                            status_a == "Delete"), status_b, NA)))) %>% 
+
+    mutate(topic = ifelse((status_b == status_a), topic_a,
+                           ifelse((status_a == "Keep" & 
+                                     status_b == "Delete"), topic_a,
+                                  ifelse((status_b == "Keep" & 
+                                            status_a == "Delete"), topic_b, NA)))) %>% 
+
+    mutate(purpose = ifelse((status_b == status_a), purpose_a,
+                           ifelse((status_a == "Keep" & 
+                                     status_b == "Delete"), purpose_a,
+                                  ifelse((status_b == "Keep" & 
+                                            status_a == "Delete"), purpose_b, NA)))) %>% 
+  
+    mutate(tone = ifelse((status_b == status_a), tone_a,
+                           ifelse((status_a == "Keep" & 
+                                     status_b == "Delete"), tone_a,
+                                  ifelse((status_b == "Keep" & 
+                                            status_a == "Delete"), tone_b, NA)))) %>% 
+  
+    mutate(topic = derivedFactor("Abuse" = (topic == "Physical violence" |
+                                              topic == "Emotional violence" |
+                                              topic == "Sexual Violence"),
+                                 "Family Planning" = (topic == "Abortion" |
+                                              topic == "Family planning"),
+                                 "Alternative Sex" = (topic == "Masturbaturbation" |
+                                                       topic == "Oral/Anal sex"),
+                                 "Relationships" = (topic == "Heterosexual relationships" |
+                                                      topic == "Homosexual relationships"),
+                                 "Premarital sex/pregnancy" = (topic == "Premarital sex/pregnancy/ childbearing"),
+                                 "Sexual purity/virginity" = (topic == "Sexual purity/virginity"),
+                                 "STIs including HIV/AIDs" = (topic == "STIs including HIV/AIDs"),
+                                 .default = NA)) %>% 
+
+    dplyr::select("postid", "post", "post_date", "post_shares",
+                  "post_comments", "post_reactions", "post_type",
+                  "topic", "purpose", "tone", "post_date") %>% 
+    filter (is.na(topic) == FALSE) %>% 
+    filter (is.na(purpose) == FALSE) %>% 
+    filter (is.na(tone) == FALSE) %>% 
+    mutate(topic = as.factor(topic),
+           purpose = as.factor(purpose),
+           tone = as.factor(tone),
+           post = as.character(post),
+           month = post_date %>% month(label = TRUE) %>% as.factor(),
+           year = post_date %>% year(),
+           day = post_date %>% day(),
+           week = post_date %>% isoweek(),
+           wday = post_date %>% wday(week_start = 1, label = TRUE))
+#%>% 
+ # filter(is.na(post_date) == FALSE) 
+
+dictionary <- read.csv("./data/dictionary.csv")
+codebook <- read.csv("./data/codebook.csv")
+
+```
+
+
+
+
+
+```{r}
+
+Descriptive <- rbind(
+  (table(merged_data$topic) %>% 
+     data.frame() %>% 
+     mutate(Percentage = round(((Freq/sum(Freq))*100), digits = 1))),
+  
+  (table(merged_data$purpose) %>% 
+     data.frame() %>% 
+     mutate(Percentage = round(((Freq/sum(Freq))*100), digits = 1))),
+
+  (table(merged_data$tone) %>% 
+     data.frame() %>% 
+     mutate(Percentage = round(((Freq/sum(Freq))*100), digits = 1)))
+) %>% 
+  rename(Classification = Var1) %>% 
+  inner_join(codebook,
+             by = c("Classification")) %>% 
+  select(c("Classification", "Explanation", "Example",
+           "Freq", "Percentage")) %>% 
+  kable(align = "l", booktabs = T, position = "left") %>%
+  kable_styling("striped", full_width = F) %>%
+  kableExtra::group_rows("Topics", 1, 6) %>% 
+  kableExtra::group_rows("Purpose", 7, 12) %>% 
+  kableExtra::group_rows("Tone", 12, 17)
+
+
+
+Descriptive %>% 
+  save_kable(file = "./figures/Descriptive.html", self_contained = T, bs_theme = "simplex")
+    
+
+```
+
+
+
+
+
+```{r}
+
+## Theme Modifications
+
+        showtext_auto()
+        # font_add_google("Roboto Condensed", "Roboto Condensed")
+        font_add("RobotoCondensed", "RobotoCondensed-Light.ttf")
+        RobotoCondensed <- "RobotoCondensed"
+
+########
+        theme_JAH <- 
+          
+          theme_bw() + 
+          
+          theme(
+
+            # Legend Settings
+            
+            legend.title = element_text(size = 23),
+            legend.text = element_text(size = 30, face = "bold", 
+                                       family = RobotoCondensed,
+                                       lineheight = unit(0.4, "pt")),
+            legend.key = element_blank(),
+            legend.background = element_blank(),
+            legend.position = "bottom",
+            # legend.direction = "horizontal",
+            # legend.box = "vertical",
+            
+            # Backgrounds
+            strip.background = element_rect(fill = "black"),
+            strip.text = element_text(size = 35, face = "bold", 
+                                      family = RobotoCondensed, colour  = "white"),
+            plot.background = element_blank(),
+            plot.margin = margin(0.5,0.5,1.0,1.0, unit = "cm"),
+            plot.title = element_text(size = 45, face = "bold", 
+                                      family = RobotoCondensed, 
+                                      lineheight = unit(0.4, "pt")),
+            plot.subtitle = element_text(size = 37, face = "bold", 
+                                      family = RobotoCondensed, 
+                                      lineheight = unit(0.4, "pt")),
+            
+            # Axis & Titles
+            axis.line = element_blank(),
+            axis.title.y = element_text(size = 28, face = "bold",
+                                        family = RobotoCondensed, 
+                                        angle=90, vjust=2.5),
+            axis.text.y=element_text(size = 28, face = "bold",
+                                     family = RobotoCondensed),
+            
+            axis.title.x = element_text(size = 28, face = "bold",
+                                        family = RobotoCondensed,
+                                        vjust = -2.5),
+            axis.text.x = element_blank(),
+            
+            # Panel
+            panel.grid = element_line(colour = NULL),
+            panel.grid.major.y = element_line(colour = "#D2D2D2",
+                                              linetype = "dashed",
+                                              size = 0.3),
+            panel.grid.major.x = element_line(colour = "#D2D2D2",
+                                              linetype = "dashed",
+                                              size = 0.3),
+            panel.grid.minor = element_blank(),
+            panel.background = element_blank(),
+            panel.border = element_blank())
+
+############
+
+
+
+```
+
+
+```{r, fig.width=5, fig.height=6}
+
+# 
+# merged_data %>%
+#   group_by(topic) %>% 
+#   summarize(comments = mean(post_comments),
+#             reactions = mean(post_reactions),
+#             shares = mean(post_shares)) %>% 
+#   
+#   ggplot(aes(x = topic, y = comments)) +
+#   geom_point (col = "tomato2", size = 3) +
+#   geom_point (aes(y = shares), col = "blue", size = 4) +
+#   geom_point (aes(y = reactions), col = "darkgreen", size = 5) +
+#   geom_segment (aes(y = 0,
+#                     yend = 300,
+#                     x = topic,
+#                     xend = topic),
+#                 linetype = "dashed",
+#                 size = 0.1) +
+#   coord_flip() +
+#   theme_classic()
+
+```
+
+
+
+
+```{r, fig.width=7.5, fig.height=7.3}
+
+
+ggplot(merged_data, 
+                 aes(x = factor(topic,
+                               labels = c("Partner Abuse",
+                               "Family\nPlanning",
+                               "Alternative\nSex",
+                               "Relationships",
+                               "Premarital\nSex/Pregnancy",
+                               "Sexual purity\n/Absteinence",
+                               "STIs including\n HIV/AIDs")), 
+                     y = post_reactions, 
+                     fill=topic)) +
+            geom_boxjitter(color="black",
+                           jitter.color = "darkgrey",
+                           errorbar.draw = TRUE) +
+            scale_y_continuous() +
+            labs(title = "Level of Engagements to Social Media Posts", 
+                 subtitle = "(a). Total Number of Reactions",
+                 x = "",
+                 y = "") +
+            theme_JAH +
+            coord_flip() +
+            theme(axis.text.y = element_text(size = 26,
+                                             lineheight = unit(0.40, "pt")),
+                  axis.title.y = element_text(size = 26),
+                  axis.text.x = element_text(size = 26,
+                                              margin = unit(c(0, 0.0, 0, 0.5),
+                                                            "cm")),
+                  axis.title.x = element_text(size = 26),
+                  strip.text.x = element_blank(),
+                  plot.title = element_text(size = 45),
+                  plot.subtitle = element_text(size = 35),
+                  legend.position = "none") -> topic_reactions
+
+
+
+
+ggplot(merged_data %>% filter(post_shares < 2500), 
+                 aes(x = factor(topic,
+                               labels = c("Partner Abuse",
+                               "Family\nPlanning",
+                               "Alternative\nSex",
+                               "Relationships",
+                               "Premarital\nSex/Pregnancy",
+                               "Sexual purity\n/Absteinence",
+                               "STIs including\n HIV/AIDs")), 
+                     y = post_shares, 
+                     fill=topic)) +
+            geom_boxjitter(color="black",
+                           jitter.color = "darkgrey",
+                           errorbar.draw = TRUE) +
+            scale_y_continuous() +
+            labs(title = "Level of Engagements to Social Media Posts", 
+                 subtitle = "(b). Total Number of Shares",
+                 x = "",
+                 y = "") +
+            theme_JAH +
+            coord_flip() +
+            theme(axis.text.y = element_text(size = 26,
+                                             lineheight = unit(0.40, "pt")),
+                  axis.title.y = element_text(size = 26),
+                  axis.text.x = element_text(size = 26,
+                                              margin = unit(c(0, 0.0, 0, 0.5),
+                                                            "cm")),
+                  axis.title.x = element_text(size = 26),
+                  strip.text.x = element_blank(),
+                  plot.title = element_blank(),
+                  plot.subtitle = element_text(size = 35),
+                  legend.position = "none") -> topic_shares
+
+
+ggplot(merged_data, 
+                 aes(x = factor(topic,
+                               labels = c("Partner Abuse",
+                               "Family\nPlanning",
+                               "Alternative\nSex",
+                               "Relationships",
+                               "Premarital\nSex/Pregnancy",
+                               "Sexual purity\n/Absteinence",
+                               "STIs including\n HIV/AIDs")), 
+                     y = post_comments, 
+                     fill=topic)) +
+            geom_boxjitter(color="black",
+                           jitter.color = "darkgrey",
+                           errorbar.draw = TRUE) +
+            scale_y_continuous() +
+            labs(title = "Level of Engagements to Social Media Posts", 
+                 subtitle = "(c). Total Number of Comments",
+                 x = "",
+                 y = "") +
+            theme_JAH +
+            coord_flip() +
+            theme(axis.text.y = element_text(size = 26,
+                                             lineheight = unit(0.40, "pt")),
+                  axis.title.y = element_text(size = 26),
+                  axis.text.x = element_text(size = 26,
+                                              margin = unit(c(0, 0.0, 0, 0.5),
+                                                            "cm")),
+                  axis.title.x = element_text(size = 26),
+                  strip.text.x = element_blank(),
+                  plot.title = element_blank(),
+                  plot.subtitle = element_text(size = 35),
+                  legend.position = "none") -> topic_comments
+
+
+ggarrange(topic_reactions, topic_shares, topic_comments,
+          ncol = 1, nrow = 3, align = "v", legend = "none")
+
+ggsave("./figures/Topic_Engagement.png", dpi = 300, height = 13, width = 8)
+
+```
+
+
+
+```{r, fig.height=4, fig.width=8.5}
+
+purpose_data <- table(merged_data$topic, merged_data$purpose) %>% 
+        data.frame() %>% 
+        rename (topic = Var1,
+                purpose = Var2,
+                Freq_purpose = Freq) %>% 
+        dplyr::group_by(topic) %>% 
+        mutate(perc_purpose = round(((Freq_purpose/sum(Freq_purpose))*100), digits = 1)) %>% 
+        mutate(perc_purpose = round(perc_purpose)) %>% 
+        mutate(perc_purpose = replace(perc_purpose, which(topic == "Family Planning" &
+                                       purpose == "Situation comparison"), 5)) %>% 
+        mutate(perc_purpose = replace(perc_purpose, which(topic == "Abuse" &
+                                       purpose == "Storytelling"), 45))
+
+  
+tone_data <- table(merged_data$topic, merged_data$tone) %>% 
+        data.frame() %>% 
+        rename (topic = Var1,
+                tone = Var2,
+                Freq_tone = Freq) %>% 
+        dplyr::group_by(topic) %>% 
+        mutate(perc_tone = round((Freq_tone/sum(Freq_tone))*100, digits = 1)) %>% 
+        mutate(perc_tone = round(perc_tone))
+    
+## Cross Tabulation for Purpose
+ggplot(purpose_data, aes(fill = factor(purpose,
+                                   labels = c("Encourage",
+                                              "Experience Sharing",
+                                              "Problem disclosure",
+                                              "Request for Opinion",
+                                              "Respond to Ongoing\nDiscussions",
+                                              "Situation Comparison",
+                                              "Storytelling")),
+                    values = perc_purpose)) +
+          geom_waffle(color = "white", size = .45, n_rows = 10, flip = TRUE) +
+          facet_wrap(~factor(topic,
+                               labels = c("Partner Abuse",
+                               "Family\nPlanning",
+                               "Alternative\nSex",
+                               "Relationships",
+                               "Premarital\nSex/Pregnancy",
+                               "Sexual purity\n/Absteinence",
+                               "STIs including\n HIV/AIDs")), 
+                     nrow = 1, strip.position = "bottom") +
+          scale_x_discrete() +
+          scale_y_continuous(labels = function(x) x * 10,
+                             expand = c(0,0)) +
+          ggthemes::scale_fill_tableau(name=NULL) +
+          labs(
+            title = "Percentage Distribution of Topics by Purpose and Tone",
+            subtitle = "Distribution by Purpose",
+            x = "",
+            y = "Percentage Distribution (%)"
+          ) +
+          theme_JAH +
+          theme(panel.grid = element_blank(), 
+                axis.ticks.y = element_line(),
+                strip.text.x = element_blank(),
+                plot.title = element_text(size = 45, 
+                                            lineheight = unit(0.4, "pt")),
+                plot.subtitle = element_text(size = 35),
+                legend.text = element_text(size = 23,
+                                           lineheight = unit(0.4, "pt")),
+                legend.title = element_text(size = 23),
+                legend.justification = "left",
+                legend.box.margin = margin(0, 0, 0, 0)
+          )+
+          guides(fill = guide_legend(reverse = TRUE)) -> purpose
+
+
+## Cross Tabulation for Tone
+ggplot(tone_data, aes(fill = factor(tone,
+                               labels = c("Enact\nFear",
+                                          "Funny",
+                                          "Guilt",
+                                          "Normal",
+                                          "Stigma")),
+                 values = perc_tone)) +
+          geom_waffle(color = "white", size = .45, n_rows = 10, flip = TRUE) +
+          facet_wrap(~factor(topic,
+                               labels = c("Partner Abuse",
+                               "Family\nPlanning",
+                               "Alternative\nSex",
+                               "Relationships",
+                               "Premarital\nSex/Pregnancy",
+                               "Sexual purity\n/Absteinence",
+                               "STIs including\n HIV/AIDs")), 
+                     nrow = 1, strip.position = "bottom") +
+          scale_x_discrete() +
+          scale_y_continuous(labels = function(x) x * 10,
+                             expand = c(0,0)) +
+          
+          ggthemes::scale_fill_tableau(name=NULL) +
+        
+          labs(
+            title = "",
+            subtitle = "Distribution by Tone",
+            x = "Topic",
+            y = "Percentage Distribution (%)"
+          ) +
+          theme_JAH +
+          theme(panel.grid = element_blank(), 
+                axis.ticks.y = element_line(),
+                axis.text.y = element_text(size = 23),
+                axis.title.y = element_text(size = 23,
+                                            margin = unit(c(0, -0.5, 0, 0),
+                                                          "cm")),
+                axis.text.x = element_text(size = 23),
+                axis.title.x = element_text(size = 23),
+                strip.text.x = element_text(size = 23, 
+                                            colour  = "black",
+                                            lineheight = unit(0.4, "pt")),
+                
+                strip.background = element_blank(),
+                
+                plot.title = element_blank(),
+                plot.subtitle = element_text(size = 35),
+                legend.text = element_text(size = 23, 
+                                           lineheight = unit(0.4, "pt")),
+                legend.title = element_text(size = 23),
+                legend.justification = "left",
+                legend.box.margin = margin(0, 0, 0, 0)
+                )+
+          guides(fill = guide_legend(reverse = TRUE)) -> tone
+
+ggarrange(purpose, tone, ncol = 1, nrow = 2, align = "v", legend = "right")
+
+ggsave("./figures/Topics_by_Tone-Purpose.png", dpi = 300, height = 8, width = 11)
+
+```
+
+
+
+
+
+```{r}
+
+hmtTable <- merged_data %>% 
+  select("post", "postid") %>% 
+  unnest_tokens(word, post) %>%
+  anti_join(stop_words) %>%
+  filter(
+    !word %in% dictionary$word,                 # remove stopwords from both words in bi-gram
+    !str_detect(word, pattern = "[[:digit:]]"), # removes any words with numeric digits
+    !str_detect(word, pattern = "[[:punct:]]"), # removes any remaining punctuations
+    !str_detect(word, pattern = "(.)\\1{2,}"),  # removes any words with 3 or more repeated letters
+    !str_detect(word, pattern = "\\b(.)\\b")   # removes any remaining single letter words
+    ) %>% 
+  count(word, sort = TRUE) %>% 
+  rename(freq = n)
+
+#Create Palette
+redPalette <- c("#5c1010", "#6f0000", "#560d0d", "#c30101", "#940000")
+redPalette
+
+youth_cloud =  wordcloud2(hmtTable, size = 1.6, 
+                          color=rep_len(redPalette, nrow(hmtTable)),
+                          fontFamily = RobotoCondensed)
+
+saveWidget(youth_cloud, paste0(here(), "/figures/tmp.html"),
+           selfcontained = F)
+
+webshot("./figures/tmp.html","./figures/youth_cloud.png", 
+        vwidth = 1043, vheight = 1043, delay = 15)
+
+
+#plots Alternative
+youth <- ("./data/new_youth.png")
+
+
+youth_cloud <- wordcloud2(hmtTable, size = 0.9, 
+                          figPath = youth, fontFamily = RobotoCondensed,
+                          color=rep_len(redPalette, nrow(hmtTable)))
+
+saveWidget(youth_cloud, paste0(here(), "/figures/youth.html"), 
+           selfcontained = F)
+
+webshot("./figures/youth.html", "./figures/youth_love.jpg", 
+        vwidth = 1992, vheight = 1992, delay = 15)
+
+
+```
+
+
+```{r}
+
+
+
+
+Top20_trigram <- merged_data %>% 
+    select("post", "postid") %>% 
+    head(1000) %>%    # otherwise this will get very large
+    unnest_tokens(trigram, post, token = "ngrams", n = 3) %>%  
+    separate(trigram, c("word1", "word2", "word3"), sep = " ") %>%               
+    filter(
+      !word1 %in% stop_words$word,                 # remove stopwords from both words in bi-gram
+      !word2 %in% stop_words$word,
+      !word3 %in% stop_words$word,
+      
+      !word1 %in% dictionary$word,                 # remove stopwords from both words in bi-gram
+      !word2 %in% dictionary$word,
+      !word3 %in% dictionary$word,
+
+      !str_detect(word1, pattern = "[[:digit:]]"), # removes any words with numeric digits
+      !str_detect(word2, pattern = "[[:digit:]]"),
+      !str_detect(word3, pattern = "[[:digit:]]"),
+      !str_detect(word1, pattern = "[[:punct:]]"), # removes any remaining punctuations
+      !str_detect(word2, pattern = "[[:punct:]]"),
+      !str_detect(word3, pattern = "[[:punct:]]"),
+      !str_detect(word1, pattern = "(.)\\1{2,}"),  # removes any words with 3 or more repeated letters
+      !str_detect(word2, pattern = "(.)\\1{2,}"),
+      !str_detect(word3, pattern = "(.)\\1{2,}"),
+      !str_detect(word1, pattern = "\\b(.)\\b"),   # removes any remaining single letter words
+      # !str_detect(word2, pattern = "\\b(.)\\b")
+      # !str_detect(word3, pattern = "\\b(.)\\b")
+      ) %>%
+    unite("trigram", c(word1, word2, word3), sep = " ") %>%
+    count(trigram, sort = TRUE) %>% 
+    head(n = 20) # filter for bi-grams used 10 or more times
+
+
+Top20_bigram <- merged_data %>% 
+    select("post", "postid") %>% 
+    head(1000) %>%    # otherwise this will get very large
+    unnest_tokens(bigram, post, token = "ngrams", n = 2) %>%  
+    separate(bigram, c("word1", "word2"), sep = " ") %>%               
+    filter(
+      !word1 %in% stop_words$word,                 # remove stopwords from both words in bi-gram
+      !word2 %in% stop_words$word,
+
+      !word1 %in% dictionary$word,                 # remove stopwords from both words in bi-gram
+      !word2 %in% dictionary$word,
+
+      !str_detect(word1, pattern = "[[:digit:]]"), # removes any words with numeric digits
+      !str_detect(word2, pattern = "[[:digit:]]"),
+
+      !str_detect(word1, pattern = "[[:punct:]]"), # removes any remaining punctuations
+      !str_detect(word2, pattern = "[[:punct:]]"),
+      
+      !str_detect(word1, pattern = "(.)\\1{2,}"),  # removes any words with 3 or more repeated letters
+      !str_detect(word2, pattern = "(.)\\1{2,}"),
+      
+      !str_detect(word1, pattern = "\\b(.)\\b"),   # removes any remaining single letter words
+      # !str_detect(word2, pattern = "\\b(.)\\b")
+      # !str_detect(word3, pattern = "\\b(.)\\b")
+      ) %>%
+    unite("bigram", c(word1, word2), sep = " ") %>%
+    count(bigram, sort = TRUE) %>% 
+    head(n = 20) # filter for bi-grams used 10 or more times
+
+
+# Top20_bigram %>% 
+#     ggplot(aes(x=reorder(bigram, n), y=n)) +
+#     geom_bar(stat="identity", fill = "#4682B4") + coord_flip() +
+#     labs(title = "",
+#     subtitle = "Distribution by Tone",
+#     x = "Topic",
+#     y = "Percentage Distribution (%)") +
+#   theme(panel.grid = element_blank(), 
+#         axis.ticks.y = element_line(),
+#         axis.text.y = element_text(size = 23),
+#         axis.title.y = element_text(size = 23,
+#                                     margin = unit(c(0, -0.5, 0, 0),
+#                                                   "cm")),
+#         axis.text.x = element_text(size = 23),
+#         axis.title.x = element_text(size = 23),
+#         plot.title = element_blank(),
+#         plot.subtitle = element_text(size = 35),
+#         legend.text = element_text(size = 23, 
+#                                    lineheight = unit(0.4, "pt")),
+#         legend.title = element_text(size = 23),
+#         legend.box.margin = margin(0, 0, 0, -65))+
+#   guides(fill = guide_legend(reverse = TRUE)) -> bigram
+# 
+# 
+# Top20_trigram %>% 
+#     ggplot(aes(x=reorder(trigram, n), y=n, fill = trigram)) +
+#     geom_bar(stat="identity", fill = "#4682B4") + coord_flip() +
+#     labs(title = "",
+#     subtitle = "Distribution by Tone",
+#     x = "Topic",
+#     y = "Percentage Distribution (%)") +
+#   theme(panel.grid = element_blank(), 
+#         axis.ticks.y = element_line(),
+#         axis.text.y = element_text(size = 23),
+#         axis.title.y = element_text(size = 23,
+#                                     margin = unit(c(0, -0.5, 0, 0),
+#                                                   "cm")),
+#         axis.text.x = element_text(size = 23),
+#         axis.title.x = element_text(size = 23),
+#         plot.title = element_blank(),
+#         plot.subtitle = element_text(size = 35),
+#         legend.text = element_text(size = 23, 
+#                                    lineheight = unit(0.4, "pt")),
+#         legend.title = element_text(size = 23),
+#         legend.box.margin = margin(0, 0, 0, -65))+
+#   guides(fill = guide_legend(reverse = TRUE)) -> trigram
+# 
+# ggarrange(bigram, trigram, ncol = 2, nrow = 1, align = "h", legend = "none")
+# 
+# ggsave("./figures/n-Grams.png", dpi = 300, height = 5, width = 7)
+
+```
+
+
+
+
+```{r}
+
+nGrams <-
+  cbind(Top20_bigram, Top20_trigram) %>% 
+  kable(caption = " ",
+        align = "l", booktabs = T, position = "centre") %>%
+  kable_styling(full_width = F,  row_label_position="l") %>%
+  add_header_above(c(" " = 2, " " = 2))
+
+nGrams
+
+nGrams %>% 
+  save_kable(file = paste0(here(), "/figures/nGrams.html"), 
+             self_contained = T, bs_theme = "simplex")
+
+```
+
+
+```{r}
+
+model_Data <- merged_data %>% 
+  dplyr::select("wday", "purpose", "tone", "post_reactions",
+                "post_shares", "post_comments", "topic") %>% 
+  mutate(week_day = as.character.factor(model_Data$wday) %>% 
+           as.factor(),
+         total_inter = post_comments + post_shares + post_reactions)
+
+
+model_reactions <- glm(post_reactions ~ post_comments + post_shares + 
+                         relevel(topic, ref = "Relationships") +
+                         relevel(tone, ref = "Normal") +
+                         relevel(purpose, ref = "Encourage"),
+                         # relevel(week_day, ref = "Sat"),
+
+             data = model_Data, family = quasipoisson(link = "log"))
+
+               #quasipoisson(link = "log"))
+
+
+model_comments <- glm(post_comments ~ post_reactions + post_shares +
+                        relevel(topic, ref = "Relationships") +
+                        relevel(tone, ref = "Normal") +
+                        relevel(purpose, ref = "Encourage"),
+                        # relevel(week_day, ref = "Sat"),
+
+             data = model_Data, family = quasipoisson(link = "log"))
+
+
+model_shares <- glm(post_shares ~ post_reactions + post_comments +
+                      relevel(topic, ref = "Relationships") +
+                      relevel(tone, ref = "Normal") +
+                      relevel(purpose, ref = "Encourage"),
+                      # relevel(week_day, ref = "Sat"),
+
+             data = model_Data, family = quasipoisson(link = "log"))
+
+model_total <- glm(total_inter ~ 
+                      relevel(topic, ref = "Relationships") +
+                      relevel(tone, ref = "Normal") +
+                      relevel(purpose, ref = "Encourage"),
+                      # relevel(week_day, ref = "Sat"),
+
+             data = model_Data, family = quasipoisson(link = "log"))
+
+# summary(model_shares)
+
+
+
+stargazer(model_total, model_reactions, 
+          model_comments, model_shares, 
+          type = "text", digits = 2, 
+          single.row = TRUE, ci = FALSE, 
+         #ci.level = 0.95, 
+         # ci.separator = " - ",
+         # covariate.labels=c("Religious Supports IPV related Dissolution",
+         #                    "Family Supports  IPV related Dissolution",
+         #                    "People Supports IPV related Dissolution",
+         #                    "Age (single years)", "Never Married (not in relationship)",
+         #                    "Never Married (in a relationship)", "Formerly married",
+         #                    "Less than Secondary", "Secondary", "Currently Working",
+         #                    "Christian (Pentecostal)", "Christian(Protestant)",
+         #                    "Muslim", "Traditional", "No Religion",
+         #                    "Important", "Not very Important"),
+         star.cutoffs = c(0.05, 0.01, 0.001),
+         keep.stat = c("n","ll"),
+         out = "Poisson_Models.html")
+
+
+
+```
+
+
+
+
+```{r}
+
+writexl::write_xlsx(merged_data, "merged_data.xlsx")
+
+```
+
