@@ -36,15 +36,16 @@ theme_set <-
         
         # Legend Settings
         
-        legend.title = element_text(size = 23),
-        legend.text = element_text(size = 30, face = "bold", 
+        legend.title = element_text(size = 32, face = "bold", 
+                                    family = Font,
+                                    lineheight = unit(0.1, "pt")),
+        legend.text = element_text(size = 30, 
                                    family = Font,
                                    lineheight = unit(0.4, "pt")),
-        legend.key = element_blank(),
+        # legend.key = element_rect(size = 1, "pt"),
         legend.background = element_blank(),
         legend.justification = "left",
         legend.box.margin = margin(0, 0, 0, 0),
-        
         # legend.position = "bottom",
         # legend.direction = "horizontal",
         # legend.box = "vertical",
@@ -54,7 +55,7 @@ theme_set <-
         # strip.text = element_text(size = 35, face = "bold", 
         #                           family = Font, colour  = "white"),
         plot.background = element_blank(),
-        # plot.margin = margin(0.5,0.5,1.0,1.0, unit = "cm"),
+        plot.margin = margin(0.5,0.5,1.0,1.0, unit = "cm"),
         plot.title = element_text(size = 45, face = "bold", 
                                   family = Font, 
                                   lineheight = unit(0.4, "pt")),
@@ -64,14 +65,13 @@ theme_set <-
         
         # Axis & Titles
         axis.line = element_blank(),
-        axis.title.x = element_text(size = 28, face = "bold",
-                                    family = Font),
-        axis.text.x=element_text(size = 28, face = "bold",
+        axis.title.x = element_blank(),
+        axis.text.x=element_text(size = 32, face = "bold",
                                  family = Font),
         
         axis.title.y = element_text(size = 28, face = "bold",
                                     family = Font),
-        axis.text.y = element_text(size = 28, face = "bold",
+        axis.text.y = element_text(size = 32, face = "bold",
                                    family = Font,
                                    lineheight = unit(0.4, "pt")),
         

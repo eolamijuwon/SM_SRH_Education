@@ -1,17 +1,24 @@
 ################################################################################
 #
-## Advancing sexual health education for young African adults in the digital age: 
-## Uncovering strategies for successful organic engagement
-#
-# Data Visualizations
+#' Understanding how young African adults interact with 
+#' peer-generated sexual health information on Facebook and 
+#' uncovering strategies for successful organic engagement
+#' 
+#  ########################################################
+#' 
+#  Data Visualizations
 #
 ################################################################################
 
+## Read Datasets from Local Machine 
+FB_SRH <- read.csv("Data/FB_SRH.csv")
+codebook <- read.csv("Data/codebook.csv")
 
-## Read Datasets from GitHub              
-FB_SRH <- read.csv("./Data/FB_SRH.csv")
-codebook <- read.csv("./Data/codebook.csv")
+## OR
 
+## Read Datasets from Github
+# FB_SRH <- read.csv("https://raw.githubusercontent.com/eolamijuwon/SM_SRH_Education/master/Data/FB_SRH.csv")
+# codebook <- read.csv("https://raw.githubusercontent.com/eolamijuwon/SM_SRH_Education/master/Data/codebook.csv")
 
 
 interactions <- data.frame(rbind(cbind(FB_SRH$post_reactions, "Post Reactions"),
@@ -54,7 +61,7 @@ filter(interactions,  count< 1500) %>%
                                                   lineheight = unit(0.25, "pt"),
                                                   face = "italic"))
               
-ggsave("./output/Social Interactions.png", dpi = 300, height = 6.5, width = 4)
+ggsave("Output/Social Interactions.png", dpi = 300, height = 6.5, width = 4)
 
 
 
@@ -80,7 +87,7 @@ tone_data <- table(FB_SRH$post_topic, FB_SRH$post_tone) %>%
               mutate(perc_tone = round(perc_tone)) %>% 	
               mutate(perc_tone = replace(perc_tone, which(post_topic == "Abuse" &
                                                             post_tone == "Enact fear"), 1)) %>% 
-              mutate(perc_tone = replace(perc_tone, which(post_topic == "Family Planning" &
+              mutate(perc_tone = replace(perc_tone, which(post_topic == "Birth Control and Abortion" &
                                                             post_tone == "Neutral"), 48)) %>% 
               mutate(perc_tone = replace(perc_tone, which(post_topic == "Intimate Relations" &
                                                             post_tone == "Enact fear"), 2)) %>% 
@@ -92,31 +99,28 @@ tone_data <- table(FB_SRH$post_topic, FB_SRH$post_tone) %>%
 ## Cross Tabulation for Style
 #### See::https://jrnold.github.io/ggthemes/reference/tableau_color_pal.html:: for palette
 
-
-
-
 ggplot(style_data, aes(fill = factor(post_style,
-                                     labels = c("Counsel",
-                                                "Experience sharing",
+                                     labels = c("Experience sharing",
                                                 "Request for Opinion",
+                                                "Status update",
                                                 "Storytelling")),
                        x = perc_style,
                        y = factor(post_topic,
                                   labels = c("Abuse",
-                                             "Family\nPlanning",
+                                             "Birth Control \nand Abortion",
                                              "Intimate\nRelations",
                                              "Sexual\nAbstinence",
                                              "Sexual\nPurity")))) +
         geom_bar(position="fill", stat="identity") +
         scale_fill_manual(values = c("#A8A8A8", "#ffb612", "#000000", "#0B77A1")) + 
-        scale_x_continuous(labels = function(x) x * 100,
-                           expand = c(0,0)) +
+        scale_x_continuous(breaks = seq(0, 1.0, .25),
+                           expand = c(0,0),
+                           labels = percent) +
         labs(
-          # title = "Percentage Distribution of Topics by Style and Tone",
-          subtitle = "(a) Topic Classifications by Purpose of Communication",
+          subtitle = "(a) Topic Classifications by Strategy of Communication",
           y = "",
-          x = "Percentage Distribution (%)",
-          fill = "Post Tone"
+          x = "",
+          fill = "Messaging Strategy"
         ) + 
         theme_set -> style
 
@@ -132,19 +136,19 @@ ggplot(tone_data, aes(fill = factor(post_tone,
                       x = perc_tone,
                       y = factor(post_topic,
                                  labels = c("Abuse",
-                                            "Family\nPlanning",
+                                            "Birth Control \nand Abortion",
                                             "Intimate\nRelations",
                                             "Sexual\nAbstinence",
                                             "Sexual\nPurity")))) +
           geom_bar(position="fill", stat="identity") +
           scale_fill_manual(values = c("#A8A8A8", "#ffb612", "#000000", "#0B77A1")) + 
-          scale_x_continuous(labels = function(x) x * 100,
-                             expand = c(0,0)) +
+        scale_x_continuous(breaks = seq(0, 1.0, .25),
+                           expand = c(0,0),
+                           labels = percent) +
           labs(
-            # title = "Percentage Distribution of Topics by Style and Tone",
             subtitle = "(b) Topic Classifications by Tone of Communication",
             y = "",
-            x = "Percentage Distribution (%)",
+            x = "",
             fill = "Post Tone") +
           theme_set -> tone
 
@@ -153,7 +157,7 @@ ggplot(tone_data, aes(fill = factor(post_tone,
 
 ggarrange(style, tone, ncol = 1, nrow = 2, align = "v", legend = "right")
 
-ggsave("./output/Topics_by_Tone-Style.png", dpi = 250, height = 9, width = 15)
+ggsave("Output/Topics_by_Tone-Style.png", dpi = 250, height = 10, width = 15)
 
 
 

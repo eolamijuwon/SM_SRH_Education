@@ -1,9 +1,12 @@
 ################################################################################
 #
-## Advancing sexual health education for young African adults in the digital age: 
-## Uncovering strategies for successful organic engagement
-#
-# Descriptive Characteristics and Regression Models
+#' Understanding how young African adults interact with 
+#' peer-generated sexual health information on Facebook and 
+#' uncovering strategies for successful organic engagement
+#' 
+#  ########################################################
+#' 
+#  Message Features and Regression Models
 #
 ################################################################################
 
@@ -11,8 +14,14 @@
 
 
 ## Read Datasets from GitHub              
-FB_SRH <- read.csv("./Data/FB_SRH.csv")
-codebook <- read.csv("./Data/codebook.csv")
+FB_SRH <- read.csv("Data/FB_SRH.csv") %>% 
+          mutate(post_style = as.factor(post_style),
+                 post_topic = as.factor(post_topic),
+                 post_tone = as.factor(post_tone),
+                 post_type = as.factor(post_type)) %>% 
+          dplyr::select(-c("X"))
+
+codebook <- read.csv("Data/codebook.csv")
 
 
 
@@ -29,6 +38,10 @@ Descriptive <- rbind(
               
               (table(FB_SRH$post_tone) %>% 
                  data.frame() %>% 
+                 mutate(Percentage = round(((Freq/sum(Freq))*100), digits = 1))),
+              
+              (table(FB_SRH$post_type) %>% 
+                 data.frame() %>% 
                  mutate(Percentage = round(((Freq/sum(Freq))*100), digits = 1)))
               ) %>% 
               rename(Classification = Var1) %>% 
@@ -39,12 +52,13 @@ Descriptive <- rbind(
               kable(align = "l", booktabs = T, position = "left") %>%
               kable_styling("striped", full_width = F) %>%
               kableExtra::group_rows("Topics", 1, 5) %>% 
-              kableExtra::group_rows("Style", 6, 9) %>% 
-              kableExtra::group_rows("Tone", 10, 13)
+              kableExtra::group_rows("Strategy", 6, 9) %>% 
+              kableExtra::group_rows("Tone", 10, 13) %>% 
+              kableExtra::group_rows("Type", 14, 16) 
 
 
 Descriptive %>% 
-  save_kable(file = "./output/Descriptive.html",
+  save_kable(file = "Output/Descriptive.html",
              self_contained = T, bs_theme = "simplex")
 
 
@@ -65,17 +79,32 @@ interactions <- data.frame(rbind(cbind(FB_SRH$post_reactions, "Post Reactions"),
 
 # summary(model_shares)
 
+
+
+#####
+
+
+signif.num <- function(x) {
+  symnum(x, corr = FALSE, na = FALSE, legend = FALSE,
+         cutpoints = c(0, 0.001, 0.01, 0.05, 1), 
+         symbols = c("***", "**", "*", " "))
+}
+
+
+
+#######
+
 model_total <- glm.nb(total_inter ~ 
                      relevel(post_topic, ref = "Intimate Relations") +
                      relevel(post_tone, ref = "Neutral") +
-                     relevel(post_style, ref = "Counsel") +
-                     relevel(post_type, ref = "status"),
+                     relevel(post_style, ref = "Status update") +
+                     relevel(post_type, ref = "Text only"),
                    
                    data = FB_SRH)
 
 
 
-mod_total <- exp(cbind(OR = coef(model_total), confint(model_total))) %>% 
+mod_total <- exp(cbind(IRR = coef(model_total), confint(model_total))) %>% 
               as.data.frame()
               pval <- (summary(model_total)$coefficients[,4])
               total_pv <- as.data.frame(signif.num(pval))
@@ -83,11 +112,11 @@ mod_total <- exp(cbind(OR = coef(model_total), confint(model_total))) %>%
               
             mod_total <-  mod_total %>%
               add_rownames("Characteristics") %>%
-              mutate ("OR" = round(OR, digits = 2)) %>% 
+              mutate ("IRR" = round(IRR, digits = 2)) %>% 
               mutate ("LCI" = round(`2.5 %`, digits = 2)) %>% 
               mutate ("UCI" = round(`97.5 %`, digits = 2)) %>% 
               mutate ("Characteristics" = c("Intercept", "Abuse",
-                                            "Family Planning",
+                                            "Birth Control and Abortion",
                                             "Sexual Abstinence", "Sexual Purity",
                                             "Enact fear", "Guilt", "Stigma", 
                                             "Experience sharing",
@@ -95,20 +124,20 @@ mod_total <- exp(cbind(OR = coef(model_total), confint(model_total))) %>%
                                             "Link", "Photo"))
                           mod_total <- cbind(mod_total, total_pv) %>% 
                                         rename(pval = `signif.num(pval)`) %>% 
-                                        mutate(OR = paste(OR, pval, sep = ""),
+                                        mutate(IRR = paste(IRR, pval, sep = ""),
                                                CI = paste(LCI, " - ", UCI, sep = "")) %>% 
-                                        dplyr::select("Characteristics", "OR", "CI")
+                                        dplyr::select("Characteristics", "IRR", "CI")
 
 ## Number of Shares ##
                           
 model_shares <- glm.nb(post_shares ~ relevel(post_topic, ref = "Intimate Relations") +
                          relevel(post_tone, ref = "Neutral") +
-                         relevel(post_style, ref = "Counsel") +
-                         relevel(post_type, ref = "status"),
+                         relevel(post_style, ref = "Status update") +
+                         relevel(post_type, ref = "Text only"),
                        data = FB_SRH)
 
 ###########                          
-mod_share <- exp(cbind(OR = coef(model_shares), confint(model_shares))) %>% 
+mod_share <- exp(cbind(IRR = coef(model_shares), confint(model_shares))) %>% 
               as.data.frame()
               pval <- (summary(model_shares)$coefficients[,4])
               share_pv <- as.data.frame(signif.num(pval))
@@ -116,11 +145,11 @@ mod_share <- exp(cbind(OR = coef(model_shares), confint(model_shares))) %>%
             
             mod_share <-  mod_share %>%
               add_rownames("Characteristics") %>%
-              mutate ("OR" = round(OR, digits = 2)) %>% 
+              mutate ("IRR" = round(IRR, digits = 2)) %>% 
               mutate ("LCI" = round(`2.5 %`, digits = 2)) %>% 
               mutate ("UCI" = round(`97.5 %`, digits = 2)) %>% 
               mutate ("Characteristics" = c("Intercept", "Abuse",
-                                "Family Planning",
+                                "Birth Control and Abortion",
                                 "Sexual Abstinence", "Sexual Purity",
                                 "Enact fear", "Guilt", "Stigma", 
                                 "Experience sharing",
@@ -128,21 +157,21 @@ mod_share <- exp(cbind(OR = coef(model_shares), confint(model_shares))) %>%
                                 "Link", "Photo"))
                           mod_share <- cbind(mod_share, share_pv) %>% 
                             rename(pval = `signif.num(pval)`) %>% 
-                            mutate(OR = paste(OR, pval, sep = ""),
+                            mutate(IRR = paste(IRR, pval, sep = ""),
                                    CI = paste(LCI, " - ", UCI, sep = "")) %>% 
-                            dplyr::select("Characteristics", "OR", "CI")
+                            dplyr::select("Characteristics", "IRR", "CI")
                           
 ## Number of Comments ####      
                           
 model_comments <- glm.nb(post_comments ~ relevel(post_topic, ref = "Intimate Relations") +
                            relevel(post_tone, ref = "Neutral") +
-                           relevel(post_style, ref = "Counsel") +
-                           relevel(post_type, ref = "status"),
+                           relevel(post_style, ref = "Status update") +
+                           relevel(post_type, ref = "Text only"),
                          
                       data = FB_SRH)
 
 #### 
-mod_comment <- exp(cbind(OR = coef(model_comments), confint(model_comments))) %>% 
+mod_comment <- exp(cbind(IRR = coef(model_comments), confint(model_comments))) %>% 
               as.data.frame()
               pval <- (summary(model_comments)$coefficients[,4])
               comment_pv <- as.data.frame(signif.num(pval))
@@ -150,11 +179,11 @@ mod_comment <- exp(cbind(OR = coef(model_comments), confint(model_comments))) %>
             
             mod_comment <-  mod_comment %>%
               add_rownames("Characteristics") %>%
-              mutate ("OR" = round(OR, digits = 2)) %>% 
+              mutate ("IRR" = round(IRR, digits = 2)) %>% 
               mutate ("LCI" = round(`2.5 %`, digits = 2)) %>% 
               mutate ("UCI" = round(`97.5 %`, digits = 2)) %>% 
               mutate ("Characteristics" = c("Intercept", "Abuse",
-                                            "Family Planning",
+                                            "Birth Control and Abortion",
                                             "Sexual Abstinence", "Sexual Purity",
                                             "Enact fear", "Guilt", "Stigma", 
                                             "Experience sharing",
@@ -162,22 +191,22 @@ mod_comment <- exp(cbind(OR = coef(model_comments), confint(model_comments))) %>
                                             "Link", "Photo"))
           mod_comment <- cbind(mod_comment, comment_pv) %>% 
                             rename(pval = `signif.num(pval)`) %>% 
-                            mutate(OR = paste(OR, pval, sep = ""),
+                            mutate(IRR = paste(IRR, pval, sep = ""),
                                    CI = paste(LCI, " - ", UCI, sep = "")) %>% 
-                            dplyr::select("Characteristics", "OR", "CI")
+                            dplyr::select("Characteristics", "IRR", "CI")
                     
      
           
 ####          
 model_reactions <- glm.nb(post_reactions ~ relevel(post_topic, ref = "Intimate Relations") +
                             relevel(post_tone, ref = "Neutral") +
-                            relevel(post_style, ref = "Counsel") +
-                            relevel(post_type, ref = "status"),
+                            relevel(post_style, ref = "Status update") +
+                            relevel(post_type, ref = "Text only"),
                           data = FB_SRH)
           
           
 #### 
-mod_reaction <- exp(cbind(OR = coef(model_reactions), confint(model_reactions))) %>% 
+mod_reaction <- exp(cbind(IRR = coef(model_reactions), confint(model_reactions))) %>% 
                 as.data.frame()
                 pval <- (summary(model_reactions)$coefficients[,4])
                 reaction_pv <- as.data.frame(signif.num(pval))
@@ -185,11 +214,11 @@ mod_reaction <- exp(cbind(OR = coef(model_reactions), confint(model_reactions)))
           
           mod_reaction <-  mod_reaction %>%
                 add_rownames("Characteristics") %>%
-                mutate ("OR" = round(OR, digits = 2)) %>% 
+                mutate ("IRR" = round(IRR, digits = 2)) %>% 
                 mutate ("LCI" = round(`2.5 %`, digits = 2)) %>% 
                 mutate ("UCI" = round(`97.5 %`, digits = 2)) %>% 
                 mutate ("Characteristics" = c("Intercept", "Abuse",
-                                              "Family Planning",
+                                              "Birth Control and Abortion",
                                               "Sexual Abstinence", "Sexual Purity",
                                               "Enact fear", "Guilt", "Stigma", 
                                               "Experience sharing",
@@ -197,23 +226,20 @@ mod_reaction <- exp(cbind(OR = coef(model_reactions), confint(model_reactions)))
                                               "Link", "Photo"))
               mod_reaction <- cbind(mod_reaction, reaction_pv) %>% 
                 rename(pval = `signif.num(pval)`) %>% 
-                mutate(OR = paste(OR, pval, sep = ""),
+                mutate(IRR = paste(IRR, pval, sep = ""),
                        CI = paste(LCI, " - ", UCI, sep = "")) %>% 
-                dplyr::select("Characteristics", "OR", "CI")
+                dplyr::select("Characteristics", "IRR", "CI")
           
-mod_total %>% 
-          left_join(mod_reaction, by = "Characteristics") %>% 
-          left_join(mod_comment, by = "Characteristics") %>% 
-          left_join(mod_share, by = "Characteristics") %>% 
-          filter(Characteristics != "Intercept") %>% 
-          rename(`95% CI` = `CI.x`,
-                 `95% CI` = `CI.y`,
-                 `95% CI` = `CI.x.x`,
-                 `95% CI` = `CI.y.y`,
-                 OR = `OR.x`,
-                 OR = `OR.y`,
-                 OR = `OR.x.x`,
-                 OR = `OR.y.y`) %>% 
+mod_total <- mod_total %>% 
+             left_join(mod_reaction, by = "Characteristics") %>% 
+             left_join(mod_comment, by = "Characteristics") %>% 
+             left_join(mod_share, by = "Characteristics") %>% 
+             filter(Characteristics != "Intercept")
+
+names (mod_total) <- sub("\\..*", "", names(mod_total))
+names (mod_total) <- sub("CI", "95% CI", names(mod_total))
+
+          mod_total %>% 
           kable(caption = " ", align = "l",
                 booktabs = T, position = "centre") %>%
           kable_styling(full_width = F,  row_label_position="l") %>%
@@ -221,7 +247,7 @@ mod_total %>%
                              "Number of Reactions" = 2,
                              "Number of Comments" = 2, 
                              "Number of Shares" = 2 )) %>% 
-  save_kable(file = "../figures/regression_model.html",
+  save_kable(file = "Output/regression_model.html",
              self_contained = T, bs_theme = "simplex")
 
   
@@ -230,19 +256,18 @@ mod_total %>%
 stargazer(model_total, model_reactions, 
           model_comments, model_shares, 
           type = "text", digits = 2, 
-          single.row = TRUE, ci = FALSE, 
-          #ci.level = 0.95, 
-          # ci.separator = " - ",
+          single.row = TRUE, ci = TRUE, 
+          p.auto=F, align = TRUE,
+          apply.coef = exp, 
+          star.cutoffs = c(0.05, 0.01, 0.001),
           covariate.labels=c("Abuse",
-                             "Family Planning",
+                             "Birth Control and Abortion",
                              "Sexual Abstinence", "Sexual Purity",
                              "Enact fear", "Guilt", "Stigma", 
                              "Experience sharing",
                              "Request for opinion", "Storytelling",
                              "Link", "Photo"),
-          star.cutoffs = c(0.05, 0.01, 0.001),
-          keep.stat = c("n","ll"),
-          out = "./output/Poisson_Models.html")
+          out = "Output/Poisson_Models.html")
 
 
 

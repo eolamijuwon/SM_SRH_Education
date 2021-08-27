@@ -26,7 +26,7 @@ source ("R/02_theme.R")
 source ("R/03_visualizations.R")
 
 
-## Step 4: Data Visualization --------------------------
+## Step 4: Regression Models ----------------------------
 # Figure is saved in "Output"
 source ("R/04_regression_models.R")
 
