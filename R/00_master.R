@@ -1,8 +1,11 @@
 
 ################################################################################
 #
-## Advancing sexual health education for young African adults in the digital age: 
-## Uncovering strategies for successful organic engagement
+#' Understanding how young African adults interact with 
+#' peer-generated sexual health information on Facebook and 
+#' uncovering strategies for successful organic engagement
+#' 
+#  ########################################################
 #
 # MASTER SCRIPT
 #
@@ -20,9 +23,6 @@ source ("R/01_packages_install.R")
 source ("R/02_theme.R")
 
 ## Step 3: Data Wrangling and Analysis ------------------
-# Two versions of the script are available:
-# Depending on internet connection, you can 
-# source/retrieve new data from online
 source ("R/03_visualizations.R")
 
 

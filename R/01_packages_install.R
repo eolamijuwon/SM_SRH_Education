@@ -1,7 +1,10 @@
 ################################################################################
 #
-## Advancing sexual health education for young African adults in the digital age: 
-## Uncovering strategies for successful organic engagement
+#' Understanding how young African adults interact with 
+#' peer-generated sexual health information on Facebook and 
+#' uncovering strategies for successful organic engagement
+#' 
+#  ########################################################
 #
 # R session preparation
 #
